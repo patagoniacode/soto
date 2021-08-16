@@ -618,6 +618,12 @@ extension MediaConvert {
         public var description: String { return self.rawValue }
     }
 
+    public enum CopyProtectionAction: String, CustomStringConvertible, Codable {
+        case passthrough = "PASSTHROUGH"
+        case strip = "STRIP"
+        public var description: String { return self.rawValue }
+    }
+
     public enum DashIsoGroupAudioChannelConfigSchemeIdUri: String, CustomStringConvertible, Codable {
         case dolbyChannelConfiguration = "DOLBY_CHANNEL_CONFIGURATION"
         case mpegChannelConfiguration = "MPEG_CHANNEL_CONFIGURATION"
@@ -2444,6 +2450,12 @@ extension MediaConvert {
     public enum Vc3Telecine: String, CustomStringConvertible, Codable {
         case hard = "HARD"
         case none = "NONE"
+        public var description: String { return self.rawValue }
+    }
+
+    public enum VchipAction: String, CustomStringConvertible, Codable {
+        case passthrough = "PASSTHROUGH"
+        case strip = "STRIP"
         public var description: String { return self.rawValue }
     }
 
@@ -5205,6 +5217,23 @@ extension MediaConvert {
         }
     }
 
+    public struct ExtendedDataServices: AWSEncodableShape & AWSDecodableShape {
+        /// The action to take on copy and redistribution control XDS packets.  If you select PASSTHROUGH, packets will not be changed. If you select STRIP, any packets will be removed in output captions.
+        public let copyProtectionAction: CopyProtectionAction?
+        /// The action to take on content advisory XDS packets.  If you select PASSTHROUGH, packets will not be changed. If you select STRIP, any packets will be removed in output captions.
+        public let vchipAction: VchipAction?
+
+        public init(copyProtectionAction: CopyProtectionAction? = nil, vchipAction: VchipAction? = nil) {
+            self.copyProtectionAction = copyProtectionAction
+            self.vchipAction = vchipAction
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case copyProtectionAction
+            case vchipAction
+        }
+    }
+
     public struct F4vSettings: AWSEncodableShape & AWSDecodableShape {
         /// If set to PROGRESSIVE_DOWNLOAD, the MOOV atom is relocated to the beginning of the archive as required for progressive downloading. Otherwise it is placed normally at the end.
         public let moovPlacement: F4vMoovPlacement?
@@ -6863,6 +6892,8 @@ extension MediaConvert {
         public let availBlanking: AvailBlanking?
         /// Settings for Event Signaling And Messaging (ESAM). If you don't do ad insertion, you can ignore these settings.
         public let esam: EsamSettings?
+        /// Hexadecimal value as per EIA-608 Line 21 Data Services, section 9.5.1.5 05h Content Advisory.
+        public let extendedDataServices: ExtendedDataServices?
         /// Use Inputs (inputs) to define source file used in the transcode job. There can be multiple inputs add in a job. These inputs will be concantenated together to create the output.
         public let inputs: [Input]?
         /// Use these settings only when you use Kantar watermarking. Specify the values that MediaConvert uses to generate and place Kantar watermarks in your output audio. These settings apply to every output in your job. In addition to specifying these values, you also need to store your Kantar credentials in AWS Secrets Manager. For more information, see https://docs.aws.amazon.com/mediaconvert/latest/ug/kantar-watermarking.html.
@@ -6880,10 +6911,11 @@ extension MediaConvert {
         /// Enable Timed metadata insertion (TimedMetadataInsertion) to include ID3 tags in any HLS outputs. To include timed metadata, you must enable it here, enable it in each output container, and specify tags and timecodes in ID3 insertion (Id3Insertion) objects.
         public let timedMetadataInsertion: TimedMetadataInsertion?
 
-        public init(adAvailOffset: Int? = nil, availBlanking: AvailBlanking? = nil, esam: EsamSettings? = nil, inputs: [Input]? = nil, kantarWatermark: KantarWatermarkSettings? = nil, motionImageInserter: MotionImageInserter? = nil, nielsenConfiguration: NielsenConfiguration? = nil, nielsenNonLinearWatermark: NielsenNonLinearWatermarkSettings? = nil, outputGroups: [OutputGroup]? = nil, timecodeConfig: TimecodeConfig? = nil, timedMetadataInsertion: TimedMetadataInsertion? = nil) {
+        public init(adAvailOffset: Int? = nil, availBlanking: AvailBlanking? = nil, esam: EsamSettings? = nil, extendedDataServices: ExtendedDataServices? = nil, inputs: [Input]? = nil, kantarWatermark: KantarWatermarkSettings? = nil, motionImageInserter: MotionImageInserter? = nil, nielsenConfiguration: NielsenConfiguration? = nil, nielsenNonLinearWatermark: NielsenNonLinearWatermarkSettings? = nil, outputGroups: [OutputGroup]? = nil, timecodeConfig: TimecodeConfig? = nil, timedMetadataInsertion: TimedMetadataInsertion? = nil) {
             self.adAvailOffset = adAvailOffset
             self.availBlanking = availBlanking
             self.esam = esam
+            self.extendedDataServices = extendedDataServices
             self.inputs = inputs
             self.kantarWatermark = kantarWatermark
             self.motionImageInserter = motionImageInserter
@@ -6917,6 +6949,7 @@ extension MediaConvert {
             case adAvailOffset
             case availBlanking
             case esam
+            case extendedDataServices
             case inputs
             case kantarWatermark
             case motionImageInserter
@@ -6998,6 +7031,8 @@ extension MediaConvert {
         public let availBlanking: AvailBlanking?
         /// Settings for Event Signaling And Messaging (ESAM). If you don't do ad insertion, you can ignore these settings.
         public let esam: EsamSettings?
+        /// Hexadecimal value as per EIA-608 Line 21 Data Services, section 9.5.1.5 05h Content Advisory.
+        public let extendedDataServices: ExtendedDataServices?
         /// Use Inputs (inputs) to define the source file used in the transcode job. There can only be one input in a job template.  Using the API, you can include multiple inputs when referencing a job template.
         public let inputs: [InputTemplate]?
         /// Use these settings only when you use Kantar watermarking. Specify the values that MediaConvert uses to generate and place Kantar watermarks in your output audio. These settings apply to every output in your job. In addition to specifying these values, you also need to store your Kantar credentials in AWS Secrets Manager. For more information, see https://docs.aws.amazon.com/mediaconvert/latest/ug/kantar-watermarking.html.
@@ -7015,10 +7050,11 @@ extension MediaConvert {
         /// Enable Timed metadata insertion (TimedMetadataInsertion) to include ID3 tags in any HLS outputs. To include timed metadata, you must enable it here, enable it in each output container, and specify tags and timecodes in ID3 insertion (Id3Insertion) objects.
         public let timedMetadataInsertion: TimedMetadataInsertion?
 
-        public init(adAvailOffset: Int? = nil, availBlanking: AvailBlanking? = nil, esam: EsamSettings? = nil, inputs: [InputTemplate]? = nil, kantarWatermark: KantarWatermarkSettings? = nil, motionImageInserter: MotionImageInserter? = nil, nielsenConfiguration: NielsenConfiguration? = nil, nielsenNonLinearWatermark: NielsenNonLinearWatermarkSettings? = nil, outputGroups: [OutputGroup]? = nil, timecodeConfig: TimecodeConfig? = nil, timedMetadataInsertion: TimedMetadataInsertion? = nil) {
+        public init(adAvailOffset: Int? = nil, availBlanking: AvailBlanking? = nil, esam: EsamSettings? = nil, extendedDataServices: ExtendedDataServices? = nil, inputs: [InputTemplate]? = nil, kantarWatermark: KantarWatermarkSettings? = nil, motionImageInserter: MotionImageInserter? = nil, nielsenConfiguration: NielsenConfiguration? = nil, nielsenNonLinearWatermark: NielsenNonLinearWatermarkSettings? = nil, outputGroups: [OutputGroup]? = nil, timecodeConfig: TimecodeConfig? = nil, timedMetadataInsertion: TimedMetadataInsertion? = nil) {
             self.adAvailOffset = adAvailOffset
             self.availBlanking = availBlanking
             self.esam = esam
+            self.extendedDataServices = extendedDataServices
             self.inputs = inputs
             self.kantarWatermark = kantarWatermark
             self.motionImageInserter = motionImageInserter
@@ -7052,6 +7088,7 @@ extension MediaConvert {
             case adAvailOffset
             case availBlanking
             case esam
+            case extendedDataServices
             case inputs
             case kantarWatermark
             case motionImageInserter

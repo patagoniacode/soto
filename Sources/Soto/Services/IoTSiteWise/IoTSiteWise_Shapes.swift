@@ -82,6 +82,13 @@ extension IoTSiteWise {
         case inSync = "IN_SYNC"
         case outOfSync = "OUT_OF_SYNC"
         case syncFailed = "SYNC_FAILED"
+        case unknown = "UNKNOWN"
+        public var description: String { return self.rawValue }
+    }
+
+    public enum ComputeLocation: String, CustomStringConvertible, Codable {
+        case cloud = "CLOUD"
+        case edge = "EDGE"
         public var description: String { return self.rawValue }
     }
 
@@ -89,6 +96,12 @@ extension IoTSiteWise {
         case active = "ACTIVE"
         case updateFailed = "UPDATE_FAILED"
         case updateInProgress = "UPDATE_IN_PROGRESS"
+        public var description: String { return self.rawValue }
+    }
+
+    public enum DetailedErrorCode: String, CustomStringConvertible, Codable {
+        case incompatibleComputeLocation = "INCOMPATIBLE_COMPUTE_LOCATION"
+        case incompatibleForwardingConfiguration = "INCOMPATIBLE_FORWARDING_CONFIGURATION"
         public var description: String { return self.rawValue }
     }
 
@@ -101,6 +114,12 @@ extension IoTSiteWise {
     public enum ErrorCode: String, CustomStringConvertible, Codable {
         case internalFailure = "INTERNAL_FAILURE"
         case validationError = "VALIDATION_ERROR"
+        public var description: String { return self.rawValue }
+    }
+
+    public enum ForwardingConfigState: String, CustomStringConvertible, Codable {
+        case disabled = "DISABLED"
+        case enabled = "ENABLED"
         public var description: String { return self.rawValue }
     }
 
@@ -2601,6 +2620,23 @@ extension IoTSiteWise {
         }
     }
 
+    public struct DetailedError: AWSDecodableShape {
+        /// The error code.
+        public let code: DetailedErrorCode
+        /// The error message.
+        public let message: String
+
+        public init(code: DetailedErrorCode, message: String) {
+            self.code = code
+            self.message = message
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case code
+            case message
+        }
+    }
+
     public struct DisassociateAssetsRequest: AWSEncodableShape {
         public static var _encoding = [
             AWSMemberEncoding(label: "assetId", location: .uri(locationName: "assetId"))
@@ -2647,16 +2683,20 @@ extension IoTSiteWise {
     public struct ErrorDetails: AWSDecodableShape {
         /// The error code.
         public let code: ErrorCode
+        ///  A list of detailed errors.
+        public let details: [DetailedError]?
         /// The error message.
         public let message: String
 
-        public init(code: ErrorCode, message: String) {
+        public init(code: ErrorCode, details: [DetailedError]? = nil, message: String) {
             self.code = code
+            self.details = details
             self.message = message
         }
 
         private enum CodingKeys: String, CodingKey {
             case code
+            case details
             case message
         }
     }
@@ -2685,6 +2725,19 @@ extension IoTSiteWise {
         }
     }
 
+    public struct ForwardingConfig: AWSEncodableShape & AWSDecodableShape {
+        /// The forwarding state for the given property.
+        public let state: ForwardingConfigState
+
+        public init(state: ForwardingConfigState) {
+            self.state = state
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case state
+        }
+    }
+
     public struct GatewayCapabilitySummary: AWSDecodableShape {
         /// The namespace of the capability configuration. For example, if you configure OPC-UA sources from the IoT SiteWise console, your OPC-UA capability configuration has the namespace iotsitewise:opcuacollector:version, where version is a number such as 1.
         public let capabilityNamespace: String
@@ -2704,18 +2757,23 @@ extension IoTSiteWise {
 
     public struct GatewayPlatform: AWSEncodableShape & AWSDecodableShape {
         /// A gateway that runs on IoT Greengrass.
-        public let greengrass: Greengrass
+        public let greengrass: Greengrass?
+        /// A gateway that runs on IoT Greengrass V2.
+        public let greengrassV2: GreengrassV2?
 
-        public init(greengrass: Greengrass) {
+        public init(greengrass: Greengrass? = nil, greengrassV2: GreengrassV2? = nil) {
             self.greengrass = greengrass
+            self.greengrassV2 = greengrassV2
         }
 
         public func validate(name: String) throws {
-            try self.greengrass.validate(name: "\(name).greengrass")
+            try self.greengrass?.validate(name: "\(name).greengrass")
+            try self.greengrassV2?.validate(name: "\(name).greengrassV2")
         }
 
         private enum CodingKeys: String, CodingKey {
             case greengrass
+            case greengrassV2
         }
     }
 
@@ -2728,14 +2786,16 @@ extension IoTSiteWise {
         public let gatewayId: String
         /// The name of the asset.
         public let gatewayName: String
+        public let gatewayPlatform: GatewayPlatform?
         /// The date the gateway was last updated, in Unix epoch time.
         public let lastUpdateDate: Date
 
-        public init(creationDate: Date, gatewayCapabilitySummaries: [GatewayCapabilitySummary]? = nil, gatewayId: String, gatewayName: String, lastUpdateDate: Date) {
+        public init(creationDate: Date, gatewayCapabilitySummaries: [GatewayCapabilitySummary]? = nil, gatewayId: String, gatewayName: String, gatewayPlatform: GatewayPlatform? = nil, lastUpdateDate: Date) {
             self.creationDate = creationDate
             self.gatewayCapabilitySummaries = gatewayCapabilitySummaries
             self.gatewayId = gatewayId
             self.gatewayName = gatewayName
+            self.gatewayPlatform = gatewayPlatform
             self.lastUpdateDate = lastUpdateDate
         }
 
@@ -2744,6 +2804,7 @@ extension IoTSiteWise {
             case gatewayCapabilitySummaries
             case gatewayId
             case gatewayName
+            case gatewayPlatform
             case lastUpdateDate
         }
     }
@@ -3094,6 +3155,24 @@ extension IoTSiteWise {
 
         private enum CodingKeys: String, CodingKey {
             case groupArn
+        }
+    }
+
+    public struct GreengrassV2: AWSEncodableShape & AWSDecodableShape {
+        /// The name of the IoT thing for your IoT Greengrass V2 core device.
+        public let coreDeviceThingName: String
+
+        public init(coreDeviceThingName: String) {
+            self.coreDeviceThingName = coreDeviceThingName
+        }
+
+        public func validate(name: String) throws {
+            try self.validate(self.coreDeviceThingName, name: "coreDeviceThingName", parent: name, max: 128)
+            try self.validate(self.coreDeviceThingName, name: "coreDeviceThingName", parent: name, min: 1)
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case coreDeviceThingName
         }
     }
 
@@ -3840,19 +3919,44 @@ extension IoTSiteWise {
     }
 
     public struct Measurement: AWSEncodableShape & AWSDecodableShape {
-        public init() {}
+        /// The processing configuration for the given measurement property. You can configure measurements to be kept at the edge or forwarded to the Amazon Web Services Cloud. By default, measurements are forwarded to the cloud.
+        public let processingConfig: MeasurementProcessingConfig?
+
+        public init(processingConfig: MeasurementProcessingConfig? = nil) {
+            self.processingConfig = processingConfig
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case processingConfig
+        }
+    }
+
+    public struct MeasurementProcessingConfig: AWSEncodableShape & AWSDecodableShape {
+        /// The forwarding configuration for the given measurement property.
+        public let forwardingConfig: ForwardingConfig
+
+        public init(forwardingConfig: ForwardingConfig) {
+            self.forwardingConfig = forwardingConfig
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case forwardingConfig
+        }
     }
 
     public struct Metric: AWSEncodableShape & AWSDecodableShape {
         /// The mathematical expression that defines the metric aggregation function. You can specify up to 10 variables per expression. You can specify up to 10 functions per expression.  For more information, see Quotas in the IoT SiteWise User Guide.
         public let expression: String
+        /// The processing configuration for the given metric property. You can configure metrics to be computed at the edge or in the Amazon Web Services Cloud. By default, metrics are forwarded to the cloud.
+        public let processingConfig: MetricProcessingConfig?
         /// The list of variables used in the expression.
         public let variables: [ExpressionVariable]
         /// The window (time interval) over which IoT SiteWise computes the metric's aggregation expression. IoT SiteWise computes one data point per window.
         public let window: MetricWindow
 
-        public init(expression: String, variables: [ExpressionVariable], window: MetricWindow) {
+        public init(expression: String, processingConfig: MetricProcessingConfig? = nil, variables: [ExpressionVariable], window: MetricWindow) {
             self.expression = expression
+            self.processingConfig = processingConfig
             self.variables = variables
             self.window = window
         }
@@ -3868,8 +3972,22 @@ extension IoTSiteWise {
 
         private enum CodingKeys: String, CodingKey {
             case expression
+            case processingConfig
             case variables
             case window
+        }
+    }
+
+    public struct MetricProcessingConfig: AWSEncodableShape & AWSDecodableShape {
+        /// The compute location for the given metric property.
+        public let computeLocation: ComputeLocation
+
+        public init(computeLocation: ComputeLocation) {
+            self.computeLocation = computeLocation
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case computeLocation
         }
     }
 
@@ -4365,11 +4483,14 @@ extension IoTSiteWise {
     public struct Transform: AWSEncodableShape & AWSDecodableShape {
         /// The mathematical expression that defines the transformation function. You can specify up to 10 variables per expression. You can specify up to 10 functions per expression.  For more information, see Quotas in the IoT SiteWise User Guide.
         public let expression: String
+        /// The processing configuration for the given transform property. You can configure transforms to be kept at the edge or forwarded to the Amazon Web Services Cloud. You can also configure transforms to be computed at the edge or in the cloud.
+        public let processingConfig: TransformProcessingConfig?
         /// The list of variables used in the expression.
         public let variables: [ExpressionVariable]
 
-        public init(expression: String, variables: [ExpressionVariable]) {
+        public init(expression: String, processingConfig: TransformProcessingConfig? = nil, variables: [ExpressionVariable]) {
             self.expression = expression
+            self.processingConfig = processingConfig
             self.variables = variables
         }
 
@@ -4383,26 +4504,48 @@ extension IoTSiteWise {
 
         private enum CodingKeys: String, CodingKey {
             case expression
+            case processingConfig
             case variables
         }
     }
 
-    public struct TumblingWindow: AWSEncodableShape & AWSDecodableShape {
-        /// The time interval for the tumbling window. Note that w represents weeks, d represents days, h represents hours, and m represents minutes. IoT SiteWise computes the 1w interval the end of Sunday at midnight each week (UTC), the 1d interval at the end of each day at midnight (UTC), the 1h interval at the end of each hour, and so on.  When IoT SiteWise aggregates data points for metric computations, the start of each interval is exclusive and the end of each interval is inclusive. IoT SiteWise places the computed data point at the end of the interval.
-        public let interval: String
+    public struct TransformProcessingConfig: AWSEncodableShape & AWSDecodableShape {
+        /// The compute location for the given transform property.
+        public let computeLocation: ComputeLocation
+        public let forwardingConfig: ForwardingConfig?
 
-        public init(interval: String) {
+        public init(computeLocation: ComputeLocation, forwardingConfig: ForwardingConfig? = nil) {
+            self.computeLocation = computeLocation
+            self.forwardingConfig = forwardingConfig
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case computeLocation
+            case forwardingConfig
+        }
+    }
+
+    public struct TumblingWindow: AWSEncodableShape & AWSDecodableShape {
+        /// The time interval for the tumbling window. The interval time must be between 1 minute and 1 week. IoT SiteWise computes the 1w interval the end of Sunday at midnight each week (UTC), the 1d interval at the end of each day at midnight (UTC), the 1h interval at the end of each hour, and so on.  When IoT SiteWise aggregates data points for metric computations, the start of each interval is exclusive and the end of each interval is inclusive. IoT SiteWise places the computed data point at the end of the interval.
+        public let interval: String
+        /// The offset for the tumbling window. The offset parameter accepts the following:   The offset time. For example, if you specify 18h for offset and 1d for interval, IoT SiteWise aggregates data in one of the following ways:   If you create the metric before or at 6:00 p.m. (UTC), you get the first aggregation result at 6 p.m. (UTC) on the day when you create the metric.   If you create the metric after 6:00 p.m. (UTC), you get the first aggregation result at 6 p.m. (UTC) the next day.     The ISO 8601 format. For example, if you specify PT18H for offset and 1d for interval, IoT SiteWise aggregates data in one of the following ways:   If you create the metric before or at 6:00 p.m. (UTC), you get the first aggregation result at 6 p.m. (UTC) on the day when you create the metric.   If you create the metric after 6:00 p.m. (UTC), you get the first aggregation result at 6 p.m. (UTC) the next day.     The 24-hour clock. For example, if you specify 00:03:00 for offset and 5m for interval, and you create the metric at 2 p.m. (UTC), you get the first aggregation result at 2:03 p.m. (UTC). You get the second aggregation result at 2:08 p.m. (UTC).    The offset time zone. For example, if you specify 2021-07-23T18:00-08 for offset and 1d for interval, IoT SiteWise aggregates data in one of the following ways:   If you create the metric before or at 6:00 p.m. (PST), you get the first aggregation result at 6 p.m. (PST) on the day when you create the metric.   If you create the metric after 6:00 p.m. (PST), you get the first aggregation result at 6 p.m. (PST) the next day.
+        public let offset: String?
+
+        public init(interval: String, offset: String? = nil) {
             self.interval = interval
+            self.offset = offset
         }
 
         public func validate(name: String) throws {
-            try self.validate(self.interval, name: "interval", parent: name, max: 3)
+            try self.validate(self.interval, name: "interval", parent: name, max: 23)
             try self.validate(self.interval, name: "interval", parent: name, min: 2)
-            try self.validate(self.interval, name: "interval", parent: name, pattern: "1w|1d|1h|15m|5m|1m")
+            try self.validate(self.offset, name: "offset", parent: name, max: 25)
+            try self.validate(self.offset, name: "offset", parent: name, min: 2)
         }
 
         private enum CodingKeys: String, CodingKey {
             case interval
+            case offset
         }
     }
 

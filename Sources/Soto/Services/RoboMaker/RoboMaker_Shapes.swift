@@ -2551,13 +2551,16 @@ extension RoboMaker {
         public let tags: [String: String]?
         /// The world template.
         public let template: String?
+        /// Returns the JSON formatted string that describes the contents of your world.
+        public let worldDescriptionBody: String?
 
-        public init(arn: String? = nil, createdAt: Date? = nil, generationJob: String? = nil, tags: [String: String]? = nil, template: String? = nil) {
+        public init(arn: String? = nil, createdAt: Date? = nil, generationJob: String? = nil, tags: [String: String]? = nil, template: String? = nil, worldDescriptionBody: String? = nil) {
             self.arn = arn
             self.createdAt = createdAt
             self.generationJob = generationJob
             self.tags = tags
             self.template = template
+            self.worldDescriptionBody = worldDescriptionBody
         }
 
         private enum CodingKeys: String, CodingKey {
@@ -2566,6 +2569,7 @@ extension RoboMaker {
             case generationJob
             case tags
             case template
+            case worldDescriptionBody
         }
     }
 
@@ -2601,14 +2605,17 @@ extension RoboMaker {
         public let name: String?
         /// A map that contains tag keys and tag values that are attached to the world template.
         public let tags: [String: String]?
+        /// The version of the world template that you're using.
+        public let version: String?
 
-        public init(arn: String? = nil, clientRequestToken: String? = nil, createdAt: Date? = nil, lastUpdatedAt: Date? = nil, name: String? = nil, tags: [String: String]? = nil) {
+        public init(arn: String? = nil, clientRequestToken: String? = nil, createdAt: Date? = nil, lastUpdatedAt: Date? = nil, name: String? = nil, tags: [String: String]? = nil, version: String? = nil) {
             self.arn = arn
             self.clientRequestToken = clientRequestToken
             self.createdAt = createdAt
             self.lastUpdatedAt = lastUpdatedAt
             self.name = name
             self.tags = tags
+            self.version = version
         }
 
         private enum CodingKeys: String, CodingKey {
@@ -2618,6 +2625,7 @@ extension RoboMaker {
             case lastUpdatedAt
             case name
             case tags
+            case version
         }
     }
 
@@ -4533,12 +4541,15 @@ extension RoboMaker {
         public let lastUpdatedAt: Date?
         /// The name of the template.
         public let name: String?
+        /// The version of the template that you're using.
+        public let version: String?
 
-        public init(arn: String? = nil, createdAt: Date? = nil, lastUpdatedAt: Date? = nil, name: String? = nil) {
+        public init(arn: String? = nil, createdAt: Date? = nil, lastUpdatedAt: Date? = nil, name: String? = nil, version: String? = nil) {
             self.arn = arn
             self.createdAt = createdAt
             self.lastUpdatedAt = lastUpdatedAt
             self.name = name
+            self.version = version
         }
 
         private enum CodingKeys: String, CodingKey {
@@ -4546,6 +4557,7 @@ extension RoboMaker {
             case createdAt
             case lastUpdatedAt
             case name
+            case version
         }
     }
 
